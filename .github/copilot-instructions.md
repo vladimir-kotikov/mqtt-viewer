@@ -48,6 +48,25 @@ mqtt-viewer/
 - Wails CLI (`go install github.com/wailsapp/wails/v2/cmd/wails@v2.9.1`)
 - Just (optional, recommended): https://github.com/casey/just
 
+### Copilot Setup Steps
+
+<!-- copilot:setup:start -->
+```bash
+# Install system dependencies (Linux/Ubuntu)
+sudo apt-get update
+sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+
+# Install Go dependencies
+go mod tidy
+
+# Install frontend dependencies with caching
+cd frontend && pnpm install && cd ..
+
+# Install Wails CLI
+go install github.com/wailsapp/wails/v2/cmd/wails@v2.9.1
+```
+<!-- copilot:setup:end -->
+
 ### Setup and Development
 
 ```bash
