@@ -2,7 +2,7 @@ import { writable } from "svelte/store";
 import { update as wailsupdate } from "../../wailsjs/go/models";
 import { CheckForUpdates } from "../../wailsjs/go/app/App";
 import notificationStore, { type Notification } from "./notifications";
-import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
+import { Browser } from "@wailsio/runtime";
 
 interface UpdatesStore {
   isUpdateDialogOpen: boolean;
@@ -45,7 +45,7 @@ const getAvailableUpdate = async () => {
           };
           if (availableUpdate.notification_url) {
             notification.onClick = () => {
-              BrowserOpenURL(availableUpdate.notification_url);
+              Browser.OpenURL(availableUpdate.notification_url);
             };
           }
           if (availableUpdate.update_url) {

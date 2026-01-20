@@ -1,6 +1,6 @@
 import { get, writable } from "svelte/store";
 import { GetPanelSizes, UpdatePanelSize } from "wailsjs/go/app/App";
-import { WindowGetSize } from "wailsjs/runtime/runtime";
+import { Window } from "@wailsio/runtime";
 
 type SizePx = number;
 
@@ -23,7 +23,7 @@ const { subscribe, set, update } = writable<PanelSizes>({
 
 const init = async () => {
   try {
-    const windowSize = await WindowGetSize();
+    const windowSize = await Window.GetSize();
     const panelSizes = await GetPanelSizes();
     const resizablePanelSizes: {
       [id: string]: {
@@ -38,8 +38,8 @@ const init = async () => {
       };
     }
     set({
-      rootWindowHeight: windowSize.h,
-      rootWindowWidth: windowSize.w,
+      rootWindowHeight: windowSize.Height,
+      rootWindowWidth: windowSize.Width,
       resizablePanelSizes,
     });
   } catch (e) {

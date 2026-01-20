@@ -1,7 +1,7 @@
 import { get, writable } from "svelte/store";
 import type { mqtt } from "wailsjs/go/models";
 import { GetMessageHistory } from "wailsjs/go/app/App";
-import { EventsOn } from "wailsjs/runtime/runtime";
+import { Events } from "@wailsio/runtime";
 import type { events } from "wailsjs/go/models";
 import type { SupportedCodeEditorCodec } from "@/components/CodeEditor/codec";
 import type { SupportedCodeEditorFormat } from "@/components/CodeEditor/formatting";
@@ -53,9 +53,10 @@ export const createSelectedTopicStore = (
   );
 
   const registerMessageListener = () => {
-    EventsOn(
+    Events.On(
       connectionEventSet.mqttMessages,
-      (messages: mqtt.MqttMessage[]) => {
+      (event: any) => {
+        const messages = event.data as mqtt.MqttMessage[];
         const { selectedTopic, onNewMessages } = get({ subscribe });
         if (selectedTopic === null) return;
         const newMessagesForSelectedTopic = messages.filter(
@@ -80,7 +81,7 @@ export const createSelectedTopicStore = (
         }
       }
     );
-    EventsOn(connectionEventSet.mqttClearHistory, () => {
+    Events.On(connectionEventSet.mqttClearHistory, () => {
       update((store) => {
         return { ...store, history: [], selectedTopic: null };
       });

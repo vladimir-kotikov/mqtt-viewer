@@ -10,10 +10,13 @@ import (
 	topicmatching "mqtt-viewer/backend/topic-matching"
 	"mqtt-viewer/backend/update"
 	"mqtt-viewer/events"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type App struct {
 	ctx            context.Context
+	app            *application.App
 	Mode           AppMode
 	Paths          paths.Paths
 	Db             *db.DB

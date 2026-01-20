@@ -45,11 +45,11 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23.3"
+          go-version: "1.25.6"
 
       - name: Install wails
         shell: bash
-        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.9.1
+        run: go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.60
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -92,7 +92,7 @@ jobs:
           LD_FLAGS="${LD_FLAGS} -X mqtt-viewer/backend/env.MachineIdProtectString=${{ secrets.MACHINE_ID_SECRET }}"
           LD_FLAGS="${LD_FLAGS} -X mqtt-viewer/backend/env.CloudUsername=${{ secrets.CLOUD_USERNAME }}"
           LD_FLAGS="${LD_FLAGS} -X mqtt-viewer/backend/env.CloudPassword=${{ secrets.CLOUD_PASSWORD }}"
-          wails build -platform ${{ matrix.build.platform }} -ldflags "${LD_FLAGS}"
+          wails3 build -ldflags "${LD_FLAGS}"
           echo "Signing Package"
           gon -log-level=info ./build/darwin/gon.sign.json
           echo "Zipping Package"

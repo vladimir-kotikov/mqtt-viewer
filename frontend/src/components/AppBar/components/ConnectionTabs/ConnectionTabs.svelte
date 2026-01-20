@@ -203,7 +203,7 @@
       !$connectionTabs.isNewTabSelected}
     <div
       class="tab tab-content absolute top-0 left-0 z-10"
-      style="--wails-draggable:false"
+      style="--webkit-app-region:no-drag"
     >
       <ConnectionTab
         width={tabWidth}

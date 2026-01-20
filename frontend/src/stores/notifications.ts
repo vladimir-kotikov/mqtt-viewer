@@ -1,7 +1,7 @@
 import type { IconType } from "@/components/Icon/icons";
 import { writable } from "svelte/store";
 import { events } from "wailsjs/go/models";
-import { EventsOn } from "wailsjs/runtime/runtime";
+import { Events } from "@wailsio/runtime";
 
 export type Notification = {
   id: string;

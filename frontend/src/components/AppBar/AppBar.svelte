@@ -29,7 +29,7 @@
 
 <div
   class={twMerge("w-full h-[38px] min-h-[38px] bg-black flex", className)}
-  style="--wails-draggable:drag"
+  style="--webkit-app-region:drag"
 >
   {#if $os.isMac && !$os.isFullscreen}
     <!-- Make space for MAC OS window controls -->
@@ -58,7 +58,7 @@
   </div>
   <div
     class={"mr-4 flex items-center gap-1 relative z-10"}
-    style="--wails-draggable:false"
+    style="--webkit-app-region:no-drag"
   >
     <NotificationsButton />
     <IconButton

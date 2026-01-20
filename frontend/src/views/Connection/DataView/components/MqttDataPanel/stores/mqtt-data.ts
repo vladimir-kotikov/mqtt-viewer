@@ -1,6 +1,6 @@
 import { get, writable } from "svelte/store";
 import type { events, mqtt } from "wailsjs/go/models";
-import { EventsOn } from "wailsjs/runtime/runtime";
+import { Events } from "@wailsio/runtime";
 import type { HighlightedMqttTopicsStore } from "./highlighted-topics";
 
 export type MqttData = {
@@ -23,10 +23,11 @@ export const createMqttDataStore = (
 ) => {
   const { subscribe, set, update } = writable<MqttData>({}, (set) => {
     if (eventSet !== undefined) {
-      EventsOn(eventSet.mqttMessages, (messages: mqtt.MqttMessage[]) => {
+      Events.On(eventSet.mqttMessages, (event: any) => {
+        const messages = event.data as mqtt.MqttMessage[];
         processMessages(messages);
       });
-      EventsOn(eventSet.mqttClearHistory, () => {
+      Events.On(eventSet.mqttClearHistory, () => {
         resetMqttData();
       });
     }

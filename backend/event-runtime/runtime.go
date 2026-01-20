@@ -1,19 +1,17 @@
 package eventRuntime
 
 import (
-	"context"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type EventRuntime struct {
-	ctx                 context.Context
+	app                 *application.App
 	listenerCancelFuncs map[string]func()
 }
 
-func InitEventRuntime(ctx context.Context) *EventRuntime {
+func InitEventRuntime(app *application.App) *EventRuntime {
 	return &EventRuntime{
-		ctx:                 ctx,
+		app:                 app,
 		listenerCancelFuncs: map[string]func(){},
 	}
 }
@@ -22,7 +20,12 @@ func (e *EventRuntime) EventsEmit(
 	eventName string,
 	optionalData ...interface{},
 ) {
-	runtime.EventsEmit(e.ctx, eventName, optionalData...)
+	// In Wails v3, events are emitted via the application's Event property
+	if len(optionalData) > 0 {
+		e.app.Event.Emit(eventName, optionalData...)
+	} else {
+		e.app.Event.Emit(eventName)
+	}
 }
 
 func (e *EventRuntime) EventsOn(
@@ -30,7 +33,18 @@ func (e *EventRuntime) EventsOn(
 	callback func(optionalData ...interface{}),
 	key string,
 ) {
-	cancelFunc := runtime.EventsOn(e.ctx, eventName, callback)
+	cancelFunc := e.app.Event.On(eventName, func(event *application.CustomEvent) {
+		if event.Data != nil {
+			// Convert event data to slice if needed
+			if data, ok := event.Data.([]interface{}); ok {
+				callback(data...)
+			} else {
+				callback(event.Data)
+			}
+		} else {
+			callback()
+		}
+	})
 	e.listenerCancelFuncs[key] = cancelFunc
 }
 
@@ -38,7 +52,11 @@ func (e *EventRuntime) EventsOff(
 	eventName string,
 	additionalEventNames ...string,
 ) {
-	runtime.EventsOff(e.ctx, eventName, additionalEventNames...)
+	// In Wails v3, use the Off method
+	e.app.Event.Off(eventName)
+	for _, name := range additionalEventNames {
+		e.app.Event.Off(name)
+	}
 }
 
 func (e *EventRuntime) EventsOffKey(

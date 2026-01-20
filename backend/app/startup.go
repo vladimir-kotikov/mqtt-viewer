@@ -17,7 +17,7 @@ import (
 	"mqtt-viewer/backend/update"
 	"mqtt-viewer/events"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -26,15 +26,18 @@ type StartupOptions struct {
 	DbNameOverride *string
 }
 
-func (a *App) Startup(ctx context.Context, options *StartupOptions) {
+// ServiceStartup is called by Wails v3 when the application starts
+func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
 	a.ctx = ctx
+	a.app = application.Get()
 	a.Events = events.NewConnectionEvents()
 	var dbConn *db.DB
 	var err error
 	if a.Mode == AppModes.Wails {
-		a.EventRuntime = eventRuntime.InitEventRuntime(ctx)
-		envInfo := runtime.Environment(a.ctx)
-		if envInfo.BuildType == "production" {
+		a.EventRuntime = eventRuntime.InitEventRuntime(a.app)
+		// In Wails v3, we determine dev mode differently
+		// Check if we're in production by looking at env.IsDev
+		if !env.IsDev {
 			slog.Info("starting in production mode")
 			a.Mode = AppModes.Wails
 			a.Paths = paths.GetPaths()
@@ -59,6 +62,60 @@ func (a *App) Startup(ctx context.Context, options *StartupOptions) {
 			EnableConsoleLogging: false,
 		})
 	} else {
+		// Test mode - should not reach here via ServiceStartup
+		return fmt.Errorf("test mode should not use ServiceStartup")
+	}
+
+	if err != nil {
+		slog.Error(err.Error())
+		return err
+	}
+
+	slog.Info(fmt.Sprintf("running MQTT Viewer %s", env.Version))
+	slog.Info(fmt.Sprintf("resource path located at %s", a.Paths.ResourcePath))
+
+	err = dbConn.Migrate()
+	if err != nil {
+		slog.Error(err.Error())
+		return err
+	}
+	a.Db = dbConn
+	err = a.buildAppConnections()
+	if err != nil {
+		slog.Error(err.Error())
+		return err
+	}
+
+	go func() {
+		err := protobuf.WriteSparkplugProtoFiles(a.Paths.ResourcePath)
+		if err != nil {
+			slog.ErrorContext(a.ctx, fmt.Sprintf("error writing sparkplug proto files: %v", err))
+			return
+		}
+		registry, err := protobuf.LoadProtoRegistry(a.Paths.ResourcePath)
+		if err != nil {
+			slog.ErrorContext(a.ctx, fmt.Sprintf("error loading proto registry: %v", err))
+			return
+		}
+		a.ProtoRegistry = registry
+	}()
+
+	if a.Mode != AppModes.Test {
+		updater := update.NewUpdater(a.Paths.ResourcePath, env.MachineId)
+		a.Updater = updater
+	}
+
+	return nil
+}
+
+// Startup is kept for backward compatibility with tests
+func (a *App) Startup(ctx context.Context, options *StartupOptions) {
+	a.ctx = ctx
+	a.Events = events.NewConnectionEvents()
+	var dbConn *db.DB
+	var err error
+
+	if a.Mode == AppModes.Test {
 		// Test mode
 		if options == nil || options.PathsOverride == nil {
 			panic("PathsOverride must be provided when in test mode")
@@ -69,6 +126,8 @@ func (a *App) Startup(ctx context.Context, options *StartupOptions) {
 			LogLevel:             4, // info
 		}
 		dbConn, err = db.NewDb(a.Paths.ResourcePath, dbOptions)
+	} else {
+		panic("Startup should only be called in test mode; use ServiceStartup for Wails")
 	}
 
 	if err != nil {
@@ -89,25 +148,6 @@ func (a *App) Startup(ctx context.Context, options *StartupOptions) {
 	if err != nil {
 		slog.Error(err.Error())
 		panic(err)
-	}
-
-	go func() {
-		err := protobuf.WriteSparkplugProtoFiles(a.Paths.ResourcePath)
-		if err != nil {
-			slog.ErrorContext(a.ctx, fmt.Sprintf("error writing sparkplug proto files: %v", err))
-			return
-		}
-		registry, err := protobuf.LoadProtoRegistry(a.Paths.ResourcePath)
-		if err != nil {
-			slog.ErrorContext(a.ctx, fmt.Sprintf("error loading proto registry: %v", err))
-			return
-		}
-		a.ProtoRegistry = registry
-	}()
-
-	if a.Mode != AppModes.Test {
-		updater := update.NewUpdater(a.Paths.ResourcePath, env.MachineId)
-		a.Updater = updater
 	}
 }
 

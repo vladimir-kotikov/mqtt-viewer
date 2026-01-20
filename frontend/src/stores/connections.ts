@@ -8,7 +8,7 @@ import {
 } from "wailsjs/go/app/App";
 import { get, writable } from "svelte/store";
 import { events, type app } from "wailsjs/go/models";
-import { EventsOn } from "wailsjs/runtime";
+import { Events } from "@wailsio/runtime";
 import tabsStore from "@/stores/tabs";
 import subscriptionsStore, { type Subscription } from "./subscriptions";
 import type { DeepOmit } from "@/util/types";
@@ -64,7 +64,8 @@ const init = async () => {
     for (const connection of connectionsArray) {
       registerConnectionEvents(connection);
     }
-    EventsOn(events.GlobalEvent.ConnectionDeleted, async (id: number) => {
+    Events.On(events.GlobalEvent.ConnectionDeleted, async (event: any) => {
+      const id = event.data as number;
       await tabs.closeTab(id);
       await subscriptions.removeConnection(id);
       update((store) => {
@@ -100,15 +101,16 @@ const registerConnectionEvents = (connection: Connection) => {
   const {
     connectionDetails: { id, name },
   } = connection;
-  EventsOn(connection.eventSet.mqttConnected, () => {
+  Events.On(connection.eventSet.mqttConnected, () => {
     console.log(id, name, "connected");
     updateConnectionState(connection.connectionDetails.id, "connected");
   });
-  EventsOn(connection.eventSet.mqttConnecting, () => {
+  Events.On(connection.eventSet.mqttConnecting, () => {
     console.log(id, name, "connecting");
     updateConnectionState(connection.connectionDetails.id, "connecting");
   });
-  EventsOn(connection.eventSet.mqttReconnecting, (err) => {
+  Events.On(connection.eventSet.mqttReconnecting, (event: any) => {
+    const err = event.data;
     console.log(id, name, "reconnecting");
     updateConnectionState(connection.connectionDetails.id, "reconnecting");
     if (!!err) {
@@ -121,7 +123,8 @@ const registerConnectionEvents = (connection: Connection) => {
       });
     }
   });
-  EventsOn(connection.eventSet.mqttDisconnected, (err) => {
+  Events.On(connection.eventSet.mqttDisconnected, (event: any) => {
+    const err = event.data;
     console.log(id, name, "disconnected");
     updateConnectionState(connection.connectionDetails.id, "disconnected");
     if (!!err) {
@@ -134,7 +137,8 @@ const registerConnectionEvents = (connection: Connection) => {
       });
     }
   });
-  EventsOn(connection.eventSet.mqttLatency, (latencyMs) => {
+  Events.On(connection.eventSet.mqttLatency, (event: any) => {
+    const latencyMs = event.data;
     if (latencyMs) {
       update((store) => {
         const thisConnection =
