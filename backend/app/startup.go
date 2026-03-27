@@ -17,7 +17,7 @@ import (
 	"mqtt-viewer/backend/update"
 	"mqtt-viewer/events"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"gopkg.in/guregu/null.v4"
 )
 
@@ -26,15 +26,18 @@ type StartupOptions struct {
 	DbNameOverride *string
 }
 
-func (a *App) Startup(ctx context.Context, options *StartupOptions) {
-	a.ctx = ctx
+// ServiceStartup implements application.ServiceStartup, called by Wails v3 on app start.
+func (a *App) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
+	return a.startup(ctx, nil)
+}
+
+func (a *App) startup(ctx context.Context, options *StartupOptions) error {
 	a.Events = events.NewConnectionEvents()
 	var dbConn *db.DB
 	var err error
 	if a.Mode == AppModes.Wails {
-		a.EventRuntime = eventRuntime.InitEventRuntime(ctx)
-		envInfo := runtime.Environment(a.ctx)
-		if envInfo.BuildType == "production" {
+		a.EventRuntime = eventRuntime.InitEventRuntime(a.wailsApp)
+		if !env.IsDev {
 			slog.Info("starting in production mode")
 			a.Mode = AppModes.Wails
 			a.Paths = paths.GetPaths()
@@ -94,12 +97,12 @@ func (a *App) Startup(ctx context.Context, options *StartupOptions) {
 	go func() {
 		err := protobuf.WriteSparkplugProtoFiles(a.Paths.ResourcePath)
 		if err != nil {
-			slog.ErrorContext(a.ctx, fmt.Sprintf("error writing sparkplug proto files: %v", err))
+			slog.Error(fmt.Sprintf("error writing sparkplug proto files: %v", err))
 			return
 		}
 		registry, err := protobuf.LoadProtoRegistry(a.Paths.ResourcePath)
 		if err != nil {
-			slog.ErrorContext(a.ctx, fmt.Sprintf("error loading proto registry: %v", err))
+			slog.Error(fmt.Sprintf("error loading proto registry: %v", err))
 			return
 		}
 		a.ProtoRegistry = registry
@@ -109,6 +112,7 @@ func (a *App) Startup(ctx context.Context, options *StartupOptions) {
 		updater := update.NewUpdater(a.Paths.ResourcePath, env.MachineId)
 		a.Updater = updater
 	}
+	return nil
 }
 
 func (a *App) buildAppConnections() error {

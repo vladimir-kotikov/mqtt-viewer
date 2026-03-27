@@ -1,21 +1,18 @@
-import { get, writable } from "svelte/store";
-import type { mqtt } from "wailsjs/go/models";
-import { GetMessageHistory } from "wailsjs/go/app/App";
-import { EventsOn } from "wailsjs/runtime/runtime";
-import type { events } from "wailsjs/go/models";
 import type { SupportedCodeEditorCodec } from "@/components/CodeEditor/codec";
 import type { SupportedCodeEditorFormat } from "@/components/CodeEditor/formatting";
+import { Events } from "@wailsio/runtime";
+import { GetMessageHistory } from "bindings/backend/app/app";
+import type { MqttMessage } from "bindings/backend/mqtt/models";
+import type { ConnectionEventsSet } from "bindings/events/models";
+import { get, writable } from "svelte/store";
 
-export type MqttHistoryMessage = Omit<
-  mqtt.MqttMessage,
-  "payload" | "convertValues"
-> & {
+export type MqttHistoryMessage = Omit<MqttMessage, "payload" | "createFrom"> & {
   payload: string;
 };
 
 interface SelectedTopicData {
   connectionId: number;
-  connectionEventSet: events.ConnectionEventsSet;
+  connectionEventSet: ConnectionEventsSet;
   selectedTopic: string | null;
   history: MqttHistoryMessage[];
   options: {
@@ -31,7 +28,7 @@ export type SelectedTopicStore = ReturnType<typeof createSelectedTopicStore>;
 
 export const createSelectedTopicStore = (
   connectionId: number,
-  connectionEventSet: events.ConnectionEventsSet
+  connectionEventSet: ConnectionEventsSet
 ) => {
   const { subscribe, set, update } = writable<SelectedTopicData>(
     {
@@ -53,34 +50,32 @@ export const createSelectedTopicStore = (
   );
 
   const registerMessageListener = () => {
-    EventsOn(
-      connectionEventSet.mqttMessages,
-      (messages: mqtt.MqttMessage[]) => {
-        const { selectedTopic, onNewMessages } = get({ subscribe });
-        if (selectedTopic === null) return;
-        const newMessagesForSelectedTopic = messages.filter(
-          (m) => m.topic === selectedTopic
-        );
-        if (newMessagesForSelectedTopic.length > 0) {
-          const decodedNewMessages = newMessagesForSelectedTopic.map((m) => {
-            return {
-              ...m,
-              payload: atob(m.payload as unknown as string),
-            };
-          });
-          if (onNewMessages !== null) {
-            onNewMessages(decodedNewMessages);
-          }
-          update((store) => {
-            return {
-              ...store,
-              history: [...store.history, ...decodedNewMessages],
-            };
-          });
+    Events.On(connectionEventSet.mqttMessages, (event: any) => {
+      const messages = event.data as MqttMessage[];
+      const { selectedTopic, onNewMessages } = get({ subscribe });
+      if (selectedTopic === null) return;
+      const newMessagesForSelectedTopic = messages.filter(
+        (m) => m.topic === selectedTopic
+      );
+      if (newMessagesForSelectedTopic.length > 0) {
+        const decodedNewMessages = newMessagesForSelectedTopic.map((m) => {
+          return {
+            ...m,
+            payload: atob(m.payload as unknown as string),
+          };
+        });
+        if (onNewMessages !== null) {
+          onNewMessages(decodedNewMessages);
         }
+        update((store) => {
+          return {
+            ...store,
+            history: [...store.history, ...decodedNewMessages],
+          };
+        });
       }
-    );
-    EventsOn(connectionEventSet.mqttClearHistory, () => {
+    });
+    Events.On(connectionEventSet.mqttClearHistory, () => {
       update((store) => {
         return { ...store, history: [], selectedTopic: null };
       });

@@ -1,5 +1,5 @@
-import { get, writable } from "svelte/store";
-import { GetSortStates, UpdateSortState } from "wailsjs/go/app/App";
+import { GetSortStates, UpdateSortState } from "bindings/backend/app/app";
+import { writable } from "svelte/store";
 
 interface DefaultSortStates {
   [sortId: string]: {

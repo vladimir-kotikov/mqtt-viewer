@@ -1,17 +1,17 @@
 <script lang="ts">
   import IconButton from "@/components/Button/IconButton.svelte";
-  import Icon from "@/components/Icon/Icon.svelte";
   import Dialog from "@/components/Dialog/Dialog.svelte";
-  import { get, writable } from "svelte/store";
-  import { getConnectionIdContext } from "@/views/Connection/contexts/connection-id";
-  import { createPublishHistoryStore } from "../../stores/publish-history";
-  import PublishHistoryItem from "./PublishHistoryItem.svelte";
+  import Icon from "@/components/Icon/Icon.svelte";
   import BaseInput from "@/components/InputFields/BaseInput.svelte";
   import { untypedColors } from "@/util/resolvedTailwindConfig";
+  import { getConnectionIdContext } from "@/views/Connection/contexts/connection-id";
+  import { get, writable } from "svelte/store";
+  import { createPublishHistoryStore } from "../../stores/publish-history";
+  import PublishHistoryItem from "./PublishHistoryItem.svelte";
   // @ts-ignore
-  import VirtualList from "@sveltejs/svelte-virtual-list/VirtualList.svelte";
-  import type { models } from "wailsjs/go/models";
   import { addToast } from "@/components/Toast/Toast.svelte";
+  import VirtualList from "@sveltejs/svelte-virtual-list/VirtualList.svelte";
+  import type { PublishHistory } from "bindings/backend/models/models";
 
   export let publishHistoryStore: ReturnType<typeof createPublishHistoryStore>;
 
@@ -34,7 +34,7 @@
 
   let isOpen = writable(false);
 
-  const onItemClick = (item: models.PublishHistory) => {
+  const onItemClick = (item: PublishHistory) => {
     publishHistoryStore.setPublishDetailsFromHistoryEntry(item);
     $isOpen = false;
   };

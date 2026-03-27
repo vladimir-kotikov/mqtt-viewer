@@ -1,9 +1,8 @@
 <script lang="ts">
   import Dialog from "@/components/Dialog/Dialog.svelte";
+  import { Browser } from "@wailsio/runtime";
   import { writable } from "svelte/store";
   import GiveFeedbackCard from "./GiveFeedbackCard.svelte";
-  import { BrowserOpenURL } from "wailsjs/runtime/runtime";
-  import Button from "@/components/Button/Button.svelte";
 
   export let open = writable(false);
 
@@ -12,14 +11,14 @@
   };
 
   const onSubmitFeatureClick = async () => {
-    BrowserOpenURL(
+    Browser.OpenURL(
       "https://github.com/mqtt-viewer/mqtt-viewer/issues/new?template=feature_idea.yml"
     );
     onClose();
   };
 
   const onSubmitBugClick = async () => {
-    BrowserOpenURL(
+    Browser.OpenURL(
       "https://github.com/mqtt-viewer/mqtt-viewer/issues/new?template=bug_report.yml"
     );
     onClose();

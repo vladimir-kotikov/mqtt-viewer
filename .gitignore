@@ -7,3 +7,5 @@ mqtt-viewer
 secrets.json
 .env
 .DS_STORE
+.task/
+backend/app/_test/

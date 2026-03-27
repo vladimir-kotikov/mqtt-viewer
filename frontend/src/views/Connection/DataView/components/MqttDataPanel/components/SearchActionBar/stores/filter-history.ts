@@ -1,14 +1,14 @@
 import {
+  DeleteFilterHistoryEntry,
   GetFilterHistoriesForConnection,
   SaveFilterHistoryEntry,
-  DeleteFilterHistoryEntry,
-} from "wailsjs/go/app/App";
+} from "bindings/backend/app/app";
+import type { FilterHistory as WailsFilterHistory } from "bindings/backend/models/models";
 import { writable } from "svelte/store";
-import { models } from "wailsjs/go/models";
 
 import type { DeepOmit } from "@/util/types";
 
-export type FilterHistory = DeepOmit<models.FilterHistory, "convertValues">[];
+export type FilterHistory = DeepOmit<WailsFilterHistory, "createFrom">[];
 
 interface FilterHistoryStore {
   filterHistory: FilterHistory;

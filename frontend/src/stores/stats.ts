@@ -1,9 +1,8 @@
+import { GetMqttStats } from "bindings/backend/app/app";
+import type { MqttStats as WailsMqttStats } from "bindings/backend/app/models";
 import { get, writable } from "svelte/store";
-import _ from "lodash";
-import { GetMqttStats } from "wailsjs/go/app/App";
-import { app } from "wailsjs/go/models";
 
-export type MqttStats = Omit<app.MqttStats, "convertValues">;
+export type MqttStats = Omit<WailsMqttStats, "createFrom">;
 
 export enum StatsMode {
   ConnPerSec = "conn-per-sec",
@@ -73,11 +72,14 @@ const getStats = async () => {
       stats.statsByConnection
     )) {
       const connId = Number(connectionId);
+      if (!statsByConnection) continue;
       const prevStatsByConnection =
-        currentState.currentTotal.statsByConnection[connId];
+        currentState.currentTotal.statsByConnection[
+          connectionId as `${number}`
+        ];
 
       if (!prevStatsByConnection) {
-        diffFromLast.statsByConnection[connId] = {
+        diffFromLast.statsByConnection[connectionId as `${number}`] = {
           bytesReceived: statsByConnection.bytesReceived,
           bytesSent: statsByConnection.bytesSent,
           messagesReceived: statsByConnection.messagesReceived,
@@ -85,7 +87,7 @@ const getStats = async () => {
         };
         continue;
       }
-      diffFromLast.statsByConnection[connId] = {
+      diffFromLast.statsByConnection[connectionId as `${number}`] = {
         bytesReceived:
           statsByConnection.bytesReceived - prevStatsByConnection.bytesReceived,
         bytesSent:

@@ -1,44 +1,41 @@
 package eventRuntime
 
 import (
-	"context"
-
-	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type EventRuntime struct {
-	ctx                 context.Context
+	app                 *application.App
 	listenerCancelFuncs map[string]func()
 }
 
-func InitEventRuntime(ctx context.Context) *EventRuntime {
+func InitEventRuntime(app *application.App) *EventRuntime {
 	return &EventRuntime{
-		ctx:                 ctx,
+		app:                 app,
 		listenerCancelFuncs: map[string]func(){},
 	}
 }
 
 func (e *EventRuntime) EventsEmit(
 	eventName string,
-	optionalData ...interface{},
+	optionalData ...any,
 ) {
-	runtime.EventsEmit(e.ctx, eventName, optionalData...)
+	e.app.Event.Emit(eventName, optionalData...)
 }
 
 func (e *EventRuntime) EventsOn(
 	eventName string,
-	callback func(optionalData ...interface{}),
+	callback func(event *application.CustomEvent),
 	key string,
 ) {
-	cancelFunc := runtime.EventsOn(e.ctx, eventName, callback)
+	cancelFunc := e.app.Event.On(eventName, callback)
 	e.listenerCancelFuncs[key] = cancelFunc
 }
 
 func (e *EventRuntime) EventsOff(
 	eventName string,
-	additionalEventNames ...string,
 ) {
-	runtime.EventsOff(e.ctx, eventName, additionalEventNames...)
+	e.app.Event.Off(eventName)
 }
 
 func (e *EventRuntime) EventsOffKey(

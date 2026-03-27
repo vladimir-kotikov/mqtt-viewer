@@ -1,17 +1,17 @@
+import tabsStore from "@/stores/tabs";
+import type { DeepOmit } from "@/util/types";
+import { Events } from "@wailsio/runtime";
 import {
   ConnectMqtt,
-  DisconnectMqtt,
   DeleteConnection,
-  UpdateConnection,
+  DisconnectMqtt,
   GetAllConnections,
   NewConnection,
-} from "wailsjs/go/app/App";
-import { get, writable } from "svelte/store";
-import { events, type app } from "wailsjs/go/models";
-import { EventsOn } from "wailsjs/runtime";
-import tabsStore from "@/stores/tabs";
+  UpdateConnection,
+} from "bindings/backend/app/app";
+import type { Connection as AppConnection } from "bindings/backend/app/models";
+import { writable } from "svelte/store";
 import subscriptionsStore, { type Subscription } from "./subscriptions";
-import type { DeepOmit } from "@/util/types";
 //@ts-ignore - unsure why this is throwing type errors
 import { addToast } from "@/components/Toast/Toast.svelte";
 import tabs from "@/stores/tabs";
@@ -24,8 +24,8 @@ export type ConnectionState =
   | "reconnecting";
 
 export type Connection = DeepOmit<
-  DeepOmit<app.Connection, "subscriptions" | "isConnected">,
-  "convertValues"
+  DeepOmit<AppConnection, "subscriptions" | "isConnected">,
+  "createFrom"
 > & {
   connectionString: string;
   protoLoadError?: string;
@@ -52,7 +52,8 @@ const init = async () => {
     const connectionsArray: Connection[] = [];
     Object.keys(appConnections).forEach((id) => {
       const connId = parseInt(id);
-      const appConn = appConnections[connId];
+      const appConn = appConnections[id as `${number}`];
+      if (!appConn) return;
       const connection = getConnectionFromAppConnection(appConn);
       connections[connId] = connection;
       connectionsArray.push(connection);
@@ -64,7 +65,8 @@ const init = async () => {
     for (const connection of connectionsArray) {
       registerConnectionEvents(connection);
     }
-    EventsOn(events.GlobalEvent.ConnectionDeleted, async (id: number) => {
+    Events.On("ConnectionDeleted", async (event: any) => {
+      const id = event.data as number;
       await tabs.closeTab(id);
       await subscriptions.removeConnection(id);
       update((store) => {
@@ -77,8 +79,8 @@ const init = async () => {
   }
 };
 
-const getConnectionFromAppConnection = (appConnection: app.Connection) => {
-  const typedAppConn = appConnection as Required<app.Connection>;
+const getConnectionFromAppConnection = (appConnection: AppConnection) => {
+  const typedAppConn = appConnection as Required<AppConnection>;
   const conn: Connection = {
     ...typedAppConn,
     connectionString: getConnectionString(
@@ -100,15 +102,16 @@ const registerConnectionEvents = (connection: Connection) => {
   const {
     connectionDetails: { id, name },
   } = connection;
-  EventsOn(connection.eventSet.mqttConnected, () => {
+  Events.On(connection.eventSet.mqttConnected, () => {
     console.log(id, name, "connected");
     updateConnectionState(connection.connectionDetails.id, "connected");
   });
-  EventsOn(connection.eventSet.mqttConnecting, () => {
+  Events.On(connection.eventSet.mqttConnecting, () => {
     console.log(id, name, "connecting");
     updateConnectionState(connection.connectionDetails.id, "connecting");
   });
-  EventsOn(connection.eventSet.mqttReconnecting, (err) => {
+  Events.On(connection.eventSet.mqttReconnecting, (event: any) => {
+    const err = event.data;
     console.log(id, name, "reconnecting");
     updateConnectionState(connection.connectionDetails.id, "reconnecting");
     if (!!err) {
@@ -121,7 +124,8 @@ const registerConnectionEvents = (connection: Connection) => {
       });
     }
   });
-  EventsOn(connection.eventSet.mqttDisconnected, (err) => {
+  Events.On(connection.eventSet.mqttDisconnected, (event: any) => {
+    const err = event.data;
     console.log(id, name, "disconnected");
     updateConnectionState(connection.connectionDetails.id, "disconnected");
     if (!!err) {
@@ -134,7 +138,8 @@ const registerConnectionEvents = (connection: Connection) => {
       });
     }
   });
-  EventsOn(connection.eventSet.mqttLatency, (latencyMs) => {
+  Events.On(connection.eventSet.mqttLatency, (event: any) => {
+    const latencyMs = event.data;
     if (latencyMs) {
       update((store) => {
         const thisConnection =
@@ -198,7 +203,7 @@ const updateConnectionDetails = async (
   try {
     console.log("updating connection details", connectionDetails);
     await UpdateConnection(
-      connectionDetails as unknown as app.Connection["connectionDetails"]
+      connectionDetails as unknown as AppConnection["connectionDetails"]
     );
     const connectionString = getConnectionString(connectionDetails);
     update((store) => {

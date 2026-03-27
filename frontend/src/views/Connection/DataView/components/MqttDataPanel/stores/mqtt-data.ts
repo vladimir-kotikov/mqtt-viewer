@@ -1,6 +1,7 @@
+import { Events } from "@wailsio/runtime";
+import type { MqttMessage } from "bindings/backend/mqtt/models";
+import type { ConnectionEventsSet } from "bindings/events/models";
 import { get, writable } from "svelte/store";
-import type { events, mqtt } from "wailsjs/go/models";
-import { EventsOn } from "wailsjs/runtime/runtime";
 import type { HighlightedMqttTopicsStore } from "./highlighted-topics";
 
 export type MqttData = {
@@ -19,20 +20,21 @@ export type MqttDataStore = ReturnType<typeof createMqttDataStore>;
 
 export const createMqttDataStore = (
   highlightedTopicStore: HighlightedMqttTopicsStore,
-  eventSet?: events.ConnectionEventsSet
+  eventSet?: ConnectionEventsSet
 ) => {
   const { subscribe, set, update } = writable<MqttData>({}, (set) => {
     if (eventSet !== undefined) {
-      EventsOn(eventSet.mqttMessages, (messages: mqtt.MqttMessage[]) => {
+      Events.On(eventSet.mqttMessages, (event: any) => {
+        const messages = event.data as MqttMessage[];
         processMessages(messages);
       });
-      EventsOn(eventSet.mqttClearHistory, () => {
+      Events.On(eventSet.mqttClearHistory, () => {
         resetMqttData();
       });
     }
   });
 
-  const processMessages = (messages: mqtt.MqttMessage[]) => {
+  const processMessages = (messages: MqttMessage[]) => {
     for (const message of messages) {
       const topicLevels = message.topic.split("/");
 

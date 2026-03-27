@@ -1,14 +1,14 @@
 <script lang="ts">
+  import ResizableContainer from "@/components/ResizableContainer/ResizableContainer.svelte";
+  import { addToast } from "@/components/Toast/Toast.svelte";
+  import type { Connection } from "@/stores/connections";
+  import panelSizes from "@/stores/panel-sizes";
+  import { DeleteRetainedMessage } from "bindings/backend/app/app";
+  import MqttDataPanel from "./components/MqttDataPanel/MqttDataPanel.svelte";
   import PublishPanel from "./components/PublishPanel/PublishPanel.svelte";
   import SelectedTopicDisplay from "./components/SelectedTopicPanel/SelectedTopicPanel.svelte";
-  import MqttDataPanel from "./components/MqttDataPanel/MqttDataPanel.svelte";
-  import { createSelectedTopicStore } from "./stores/selected-topic-store";
-  import type { Connection } from "@/stores/connections";
-  import ResizableContainer from "@/components/ResizableContainer/ResizableContainer.svelte";
   import { createMatchedTopicsStore } from "./stores/matched-topics";
-  import panelSizes from "@/stores/panel-sizes";
-  import { addToast } from "@/components/Toast/Toast.svelte";
-  import { DeleteRetainedMessage } from "wailsjs/go/app/App";
+  import { createSelectedTopicStore } from "./stores/selected-topic-store";
 
   export let connection: Connection;
 
@@ -24,13 +24,13 @@
     connection.connectionDetails.id
   );
 
-  $: connection.connectionState,
+  $: (connection.connectionState,
     (() => {
       if (connection.connectionState === "disconnected") {
         matchedTopicsStore.clearCache();
         selectedTopicStore.deselectTopic();
       }
-    })();
+    })());
 
   let publishPanelWidth: number;
   let selectedTopicPanelWidth: number;

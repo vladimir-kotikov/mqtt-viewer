@@ -1,20 +1,20 @@
 <script lang="ts">
   import Button from "@/components/Button/Button.svelte";
+  import DropdownMenu from "@/components/DropdownMenu/DropdownMenu.svelte";
+  import DropdownMenuItem from "@/components/DropdownMenu/DropdownMenuItem.svelte";
   import Icon from "@/components/Icon/Icon.svelte";
   import PanelHeader from "@/components/PanelHeader/PanelHeader.svelte";
-  import type { SearchStore } from "../../stores/search";
+  import Tooltip from "@/components/Tooltip/Tooltip.svelte";
+  import { getConnectionIdContext } from "@/views/Connection/contexts/connection-id";
+  import { ClearConnectionHistory } from "bindings/backend/app/app";
+  import _ from "lodash";
   import type { ExpandedTopicsStore } from "../../stores/expanded-topics";
+  import type { SearchStore } from "../../stores/search";
   import type {
     MqttDataSortDirection,
     MqttDataSortKey,
     MqttDataSortStore,
   } from "../../stores/sort";
-  import DropdownMenu from "@/components/DropdownMenu/DropdownMenu.svelte";
-  import DropdownMenuItem from "@/components/DropdownMenu/DropdownMenuItem.svelte";
-  import _ from "lodash";
-  import Tooltip from "@/components/Tooltip/Tooltip.svelte";
-  import { ClearConnectionHistory } from "wailsjs/go/app/App";
-  import { getConnectionIdContext } from "@/views/Connection/contexts/connection-id";
   import SearchAndHistory from "./SearchAndHistory.svelte";
 
   export let getAllTopics: () => string[];
@@ -24,7 +24,7 @@
 
   let searchText = $searchStore.text;
   const debouncedSetSearchText = _.debounce(searchStore.setSearchText, 200);
-  $: searchText,
+  $: (searchText,
     (() => {
       if (searchText === "") {
         debouncedSetSearchText.cancel();
@@ -32,7 +32,7 @@
         return;
       }
       debouncedSetSearchText(searchText);
-    })();
+    })());
 
   $: onExpandClick = () => {
     if ($expandedTopicsStore.size > 0) {

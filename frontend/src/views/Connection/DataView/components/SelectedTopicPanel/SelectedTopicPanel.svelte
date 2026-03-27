@@ -1,22 +1,22 @@
 <script lang="ts">
-  import MessageTimeline from "./components/MessageTimeline.svelte";
+  import Button from "@/components/Button/Button.svelte";
+  import IconButton from "@/components/Button/IconButton.svelte";
+  import DropdownCloseOnClick from "@/components/DropdownMenu/DropdownCloseOnClick.svelte";
+  import DropdownMenu from "@/components/DropdownMenu/DropdownMenu.svelte";
+  import Icon from "@/components/Icon/Icon.svelte";
+  import Switch from "@/components/InputFields/Switch.svelte";
   import PanelHeader from "@/components/PanelHeader/PanelHeader.svelte";
   import Tabs from "@/components/Tabs/Tabs.svelte";
-  import PayloadTab from "./components/PayloadTab.svelte";
-  import HeadersTab from "./components/HeadersTab.svelte";
-  import UserPropertiesTab from "./components/UserPropertiesTab.svelte";
   import type {
     MqttHistoryMessage,
     SelectedTopicStore,
   } from "../../stores/selected-topic-store";
-  import Button from "@/components/Button/Button.svelte";
-  import Icon from "@/components/Icon/Icon.svelte";
+  import HeadersTab from "./components/HeadersTab.svelte";
+  import MessageTimeline from "./components/MessageTimeline.svelte";
+  import PayloadTab from "./components/PayloadTab.svelte";
   import SelectedMessageArrivalDetails from "./components/SelectedMessageArrivalDetails.svelte";
-  import DropdownMenu from "@/components/DropdownMenu/DropdownMenu.svelte";
-  import Switch from "@/components/InputFields/Switch.svelte";
-  import DropdownCloseOnClick from "@/components/DropdownMenu/DropdownCloseOnClick.svelte";
-  import IconButton from "@/components/Button/IconButton.svelte";
   import Topic from "./components/Topic.svelte";
+  import UserPropertiesTab from "./components/UserPropertiesTab.svelte";
 
   export let connectionId: number;
   export let selectedTopicStore: SelectedTopicStore;
@@ -39,7 +39,7 @@
   $: selectedMessagePayload = selectedMessage?.payload.toString() ?? null;
   $: selectedMessageRetained = selectedMessage?.retain ?? false;
 
-  $: selectedMessagePayload,
+  $: (selectedMessagePayload,
     (() => {
       // Auto-format to JSON if the payload is a valid JSON string
       try {
@@ -53,7 +53,7 @@
         // It isn't valid JSON
         $selectedTopicStore.options.format = "none";
       }
-    })();
+    })());
 
   $: isComparing = $selectedTopicStore.options.compare;
   $: isAutoSelectingMostRecent = $selectedTopicStore.options.autoSelect;
@@ -170,7 +170,7 @@
             <HeadersTab
               {isComparing}
               headers={selectedMessage.properties}
-              headersToCompare={previousMessage?.properties}
+              headersToCompare={previousMessage?.properties ?? undefined}
             />
           {/if}
         </div>
@@ -178,9 +178,10 @@
           {#if !!selectedMessage.properties}
             <UserPropertiesTab
               {isComparing}
-              userProperties={selectedMessage.properties.userProperties}
+              userProperties={selectedMessage.properties
+                .userProperties as unknown as { [key: string]: string } | null}
               userPropertiesToCompare={previousMessage?.properties
-                ?.userProperties}
+                ?.userProperties as { [key: string]: string } | undefined}
             />
           {/if}
         </div>

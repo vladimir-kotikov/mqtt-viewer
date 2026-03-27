@@ -18,8 +18,15 @@
     "checkJs": true,
     "isolatedModules": true,
     "paths": {
-      "@/*": ["src/*"],
-      "wailsjs": ["./wailsjs"]
+      "@/*": [
+        "src/*"
+      ],
+      "wailsjs": [
+        "./wailsjs"
+      ],
+      "bindings/*": [
+        "./bindings/mqtt-viewer/*"
+      ]
     }
   },
   "include": [
@@ -28,7 +35,10 @@
     "src/**/*.js",
     "src/**/*.svelte",
   ],
-  "exclude": ["tsconfig.json", "src/components/CodeEditor/ace/**/*"],
+  "exclude": [
+    "tsconfig.json",
+    "src/components/CodeEditor/ace/**/*"
+  ],
   "references": [
     {
       "path": "./tsconfig.node.json"

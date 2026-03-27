@@ -1,12 +1,12 @@
-import { writable, get } from "svelte/store";
-import { GetMatchingSubscriptionForTopic } from "wailsjs/go/app/App";
-import type { models } from "wailsjs/go/models";
+import { GetMatchingSubscriptionForTopic } from "bindings/backend/app/app";
+import type { Subscription } from "bindings/backend/models/models";
+import { get, writable } from "svelte/store";
 type Topic = string;
 
 interface MatchedTopicsStore {
   connectionId: number;
   topics: {
-    [topic: Topic]: models.Subscription | null | undefined;
+    [topic: Topic]: Subscription | null | undefined;
   };
 }
 
@@ -26,7 +26,7 @@ export const createMatchedTopicsStore = (connId: number) => {
       connectionId,
       topic
     );
-    let result: models.Subscription | null = null;
+    let result: Subscription | null = null;
     if (matchingTopic !== null) result = matchingTopic;
     update((store) => {
       store.topics[topic] = result;

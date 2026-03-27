@@ -1,0 +1,25 @@
+version: '3'
+
+includes:
+  common: ../Taskfile.yml
+
+tasks:
+  build:
+    summary: Builds the application for macOS
+    deps:
+    - task: common:go:mod:tidy
+    cmds:
+    - go build -gcflags all="-N -l" -o "{{.BIN_DIR}}/{{.APP_NAME}}" .
+    env:
+      GOOS: darwin
+      CGO_ENABLED: "1"
+      CGO_LDFLAGS: "-framework UniformTypeIdentifiers"
+
+  run:
+    summary: Creates a dev .app bundle and runs the application
+    cmds:
+    - mkdir -p "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/MacOS"
+    - cp "{{.BIN_DIR}}/{{.APP_NAME}}" "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/MacOS/"
+    - cp build/darwin/Info.dev.plist "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/Info.plist"
+    - codesign --force --deep --sign - "{{.BIN_DIR}}/{{.APP_NAME}}.dev.app"
+    - '"{{.BIN_DIR}}/{{.APP_NAME}}.dev.app/Contents/MacOS/{{.APP_NAME}}"'

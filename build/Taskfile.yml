@@ -1,0 +1,53 @@
+version: '3'
+
+tasks:
+  go:mod:tidy:
+    summary: Runs `go mod tidy`
+    internal: true
+    cmds:
+    - go mod tidy
+
+  install:frontend:deps:
+    summary: Install frontend dependencies
+    dir: frontend
+    sources:
+    - package.json
+    - pnpm-lock.yaml
+    generates:
+    - node_modules/*
+    cmds:
+    - pnpm i
+
+  build:frontend:
+    summary: Build the frontend project
+    dir: frontend
+    sources:
+    - "**/*"
+    - exclude: node_modules/**/*
+    generates:
+    - dist/**/*
+    deps:
+    - task: install:frontend:deps
+    cmds:
+    - pnpm build
+
+  generate:bindings:
+    summary: Generates bindings for the frontend
+    deps:
+    - task: go:mod:tidy
+    sources:
+    - "**/*.go"
+    - go.mod
+    - go.sum
+    generates:
+    - frontend/bindings/**/*
+    cmds:
+    - wails3 generate bindings -clean=true
+
+  dev:frontend:
+    summary: Runs the frontend in development mode
+    dir: frontend
+    deps:
+    - task: install:frontend:deps
+    cmds:
+    - pnpm dev

@@ -1,17 +1,18 @@
 import {
+  DeletePublishHistoryEntry,
   GetPublishHistoriesForConnection,
   SavePublishHistoryEntry,
-  DeletePublishHistoryEntry,
-} from "wailsjs/go/app/App";
+} from "bindings/backend/app/app";
+import type { PublishProperties } from "bindings/backend/app/models";
+import type { PublishHistory as DBPublishHistory } from "bindings/backend/models/models";
 import { writable } from "svelte/store";
-import { app, models } from "wailsjs/go/models";
 
-import type { DeepOmit } from "@/util/types";
-import type { PublishDetails, PublishDetailsStore } from "./publish-details";
 import type { SupportedCodeEditorCodec } from "@/components/CodeEditor/codec";
 import type { SupportedCodeEditorFormat } from "@/components/CodeEditor/formatting";
+import type { DeepOmit } from "@/util/types";
+import type { PublishDetails, PublishDetailsStore } from "./publish-details";
 
-export type PublishHistory = DeepOmit<models.PublishHistory, "convertValues">[];
+export type PublishHistory = DeepOmit<DBPublishHistory, "createFrom">[];
 
 interface PublishHistoryStore {
   publishHistory: PublishHistory;
@@ -44,7 +45,7 @@ export const createPublishHistoryStore = (
     }
   };
 
-  const setPublishDetailsFromHistoryEntry = (entry: models.PublishHistory) => {
+  const setPublishDetailsFromHistoryEntry = (entry: DBPublishHistory) => {
     console.log("setting publish details from history entry", entry);
     let firstUserProperties = {};
     if (!!entry.userProperties) {
@@ -55,14 +56,15 @@ export const createPublishHistoryStore = (
       }
     }
 
-    const properties: app.PublishProperties = {
+    const properties: PublishProperties = {
       payloadFormatIndicator: !!entry.headerPayloadFormatIndicator,
-      messageExpiryInterval: entry.headerMessageExpiryInterval,
-      contentType: entry.headerContentType,
-      responseTopic: entry.headerResponseTopic,
-      correlationData: entry.headerCorrelationData,
-      subscriptionIdentifier: entry.headerSubscriptionIdentifier,
-      topicAlias: entry.headerTopicAlias,
+      messageExpiryInterval: entry.headerMessageExpiryInterval ?? undefined,
+      contentType: entry.headerContentType ?? undefined,
+      responseTopic: entry.headerResponseTopic ?? undefined,
+      correlationData: entry.headerCorrelationData ?? undefined,
+      subscriptionIdentifier: entry.headerSubscriptionIdentifier ?? undefined,
+      topicAlias: entry.headerTopicAlias ?? undefined,
+      userProperties: undefined,
     };
     const userPropertiesArray = Object.entries(firstUserProperties).map(
       ([key, value]) => {
@@ -94,7 +96,7 @@ export const createPublishHistoryStore = (
     retain: boolean;
     encoding: string;
     format: string;
-    properties?: app.PublishProperties;
+    properties?: PublishProperties;
     userProperties?: { [key: string]: string };
   }) => {
     try {
@@ -115,14 +117,17 @@ export const createPublishHistoryStore = (
         retain: params.retain,
         encoding: params.encoding,
         format: params.format,
-        userProperties: userPropertiesString,
-        headerContentType: params.properties?.contentType,
-        headerPayloadFormatIndicator: params.properties?.payloadFormatIndicator,
-        headerMessageExpiryInterval: params.properties?.messageExpiryInterval,
-        headerResponseTopic: params.properties?.responseTopic,
-        headerCorrelationData: params.properties?.correlationData,
-        headerSubscriptionIdentifier: params.properties?.subscriptionIdentifier,
-        headerTopicAlias: params.properties?.topicAlias,
+        userProperties: userPropertiesString ?? null,
+        headerContentType: params.properties?.contentType ?? null,
+        headerPayloadFormatIndicator:
+          params.properties?.payloadFormatIndicator ?? null,
+        headerMessageExpiryInterval:
+          params.properties?.messageExpiryInterval ?? null,
+        headerResponseTopic: params.properties?.responseTopic ?? null,
+        headerCorrelationData: params.properties?.correlationData ?? null,
+        headerSubscriptionIdentifier:
+          params.properties?.subscriptionIdentifier ?? null,
+        headerTopicAlias: params.properties?.topicAlias ?? null,
       });
       console.log("saved publish history entry", entry);
       update((store) => {

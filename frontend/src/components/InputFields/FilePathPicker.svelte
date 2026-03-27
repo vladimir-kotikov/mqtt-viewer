@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { ChooseCertFile, ChooseDirectory } from "wailsjs/go/app/App";
+  import { ChooseCertFile, ChooseDirectory } from "bindings/backend/app/app";
+  import Button from "../Button/Button.svelte";
   import Icon from "../Icon/Icon.svelte";
   import Tooltip from "../Tooltip/Tooltip.svelte";
-  import Button from "../Button/Button.svelte";
 
   export let disabled = false;
   export let defaultValue = undefined as string | undefined;

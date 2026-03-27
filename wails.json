@@ -1,11 +1,14 @@
 {
-  "$schema": "https://wails.io/schemas/config.v2.json",
+  "$schema": "https://wails.io/schemas/config.v3.json",
   "name": "MQTT Viewer",
   "outputfilename": "MQTT Viewer",
-  "frontend:install": "pnpm i",
-  "frontend:build": "pnpm build",
-  "frontend:dev:watcher": "pnpm dev",
-  "frontend:dev:serverUrl": "auto",
+  "frontend": {
+    "dir": "./frontend",
+    "install": "pnpm i",
+    "build": "pnpm build",
+    "dev": "pnpm dev",
+    "devServerUrl": "http://localhost:5173"
+  },
   "author": {
     "name": "Sam Webster",
     "email": "sam@mqttviewer.app"

@@ -33,11 +33,13 @@ func getTestApp(t *testing.T) *App {
 		os.RemoveAll(exPath)
 	})
 
-	app.Startup(ctx, &StartupOptions{
+	if err := app.startup(ctx, &StartupOptions{
 		PathsOverride: &paths.Paths{
 			ResourcePath: exPath,
 		},
-	})
+	}); err != nil {
+		t.Fatalf("startup failed: %v", err)
+	}
 	return app
 }
 

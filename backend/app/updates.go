@@ -15,7 +15,7 @@ func (a *App) CheckForUpdates() (*update.UpdateResponse, error) {
 func (a *App) StartUpdate() error {
 	err := a.Updater.UpdateSelf()
 	if err != nil {
-		slog.ErrorContext(a.ctx, fmt.Sprintf("error updating: %s", err.Error()))
+		slog.Error(fmt.Sprintf("error updating: %s", err.Error()))
 		return err
 	}
 	return nil

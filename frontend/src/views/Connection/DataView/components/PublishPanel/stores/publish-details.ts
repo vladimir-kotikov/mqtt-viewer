@@ -1,13 +1,7 @@
-import {
-  GetPublishHistoriesForConnection,
-  SavePublishHistoryEntry,
-  DeletePublishHistoryEntry,
-  PublishMqtt,
-} from "wailsjs/go/app/App";
+import { PublishMqtt } from "bindings/backend/app/app";
+import type { PublishProperties } from "bindings/backend/app/models";
 import { get, writable } from "svelte/store";
-import { app, models, mqtt } from "wailsjs/go/models";
 
-import type { DeepOmit } from "@/util/types";
 import {
   encodePayload,
   type SupportedCodeEditorCodec,
@@ -22,7 +16,7 @@ export interface PublishDetails {
   payload: string;
   qos: number;
   retain: boolean;
-  properties: Omit<app.PublishProperties, "userProperties">;
+  properties: Omit<PublishProperties, "userProperties">;
   userPropertiesArray: { key: string; value: string }[];
   codec: SupportedCodeEditorCodec;
   format: SupportedCodeEditorFormat;

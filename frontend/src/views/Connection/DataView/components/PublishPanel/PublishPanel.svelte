@@ -1,28 +1,26 @@
 <script lang="ts">
-  import { PublishMqtt } from "wailsjs/go/app/App";
-  import type { app, models, mqtt } from "wailsjs/go/models";
   import Button from "@/components/Button/Button.svelte";
-  import BaseInput from "@/components/InputFields/BaseInput.svelte";
-  import Tabs from "@/components/Tabs/Tabs.svelte";
-  import PayloadTab from "./components/PayloadTab.svelte";
-  import UserPropertiesTab from "./components/UserPropertiesTab.svelte";
-  import PanelHeader from "@/components/PanelHeader/PanelHeader.svelte";
-  import type { Connection } from "@/stores/connections";
-  import { untypedColors } from "@/util/resolvedTailwindConfig";
-  import { twMerge } from "tailwind-merge";
-  import { addToast } from "@/components/Toast/Toast.svelte";
-  import _ from "lodash";
-  import ProtobufLogo from "@/components/ProtobufLogo/ProtobufLogo.svelte";
-  import Tooltip from "@/components/Tooltip/Tooltip.svelte";
-  import HeadersTab from "./components/HeadersTab/HeadersTab.svelte";
-  import Icon from "@/components/Icon/Icon.svelte";
+  import IconButton from "@/components/Button/IconButton.svelte";
   import DropdownMenu from "@/components/DropdownMenu/DropdownMenu.svelte";
   import DropdownMenuItem from "@/components/DropdownMenu/DropdownMenuItem.svelte";
-  import IconButton from "@/components/Button/IconButton.svelte";
-  import { encodePayload } from "@/components/CodeEditor/codec";
-  import PublishHistory from "./components/PublishHistory/PublishHistory.svelte";
-  import { createPublishStore } from "./stores/publish-details";
+  import Icon from "@/components/Icon/Icon.svelte";
+  import BaseInput from "@/components/InputFields/BaseInput.svelte";
+  import PanelHeader from "@/components/PanelHeader/PanelHeader.svelte";
+  import ProtobufLogo from "@/components/ProtobufLogo/ProtobufLogo.svelte";
+  import Tabs from "@/components/Tabs/Tabs.svelte";
+  import { addToast } from "@/components/Toast/Toast.svelte";
+  import Tooltip from "@/components/Tooltip/Tooltip.svelte";
+  import type { Connection } from "@/stores/connections";
+  import { untypedColors } from "@/util/resolvedTailwindConfig";
   import { getConnectionIdContext } from "@/views/Connection/contexts/connection-id";
+  import type { Subscription } from "bindings/backend/models/models";
+  import _ from "lodash";
+  import { twMerge } from "tailwind-merge";
+  import HeadersTab from "./components/HeadersTab/HeadersTab.svelte";
+  import PayloadTab from "./components/PayloadTab.svelte";
+  import PublishHistory from "./components/PublishHistory/PublishHistory.svelte";
+  import UserPropertiesTab from "./components/UserPropertiesTab.svelte";
+  import { createPublishStore } from "./stores/publish-details";
   import { createPublishHistoryStore } from "./stores/publish-history";
 
   export let connection: Connection;
@@ -32,7 +30,7 @@
   export let close: () => void;
   export let getTopicMatchesSubscription: (
     topic: string
-  ) => Promise<models.Subscription | null>;
+  ) => Promise<Subscription | null>;
 
   let connectionId = getConnectionIdContext();
   let publishStore = createPublishStore(connectionId);
@@ -43,10 +41,10 @@
 
   let collapsedPanelHovered = false;
 
-  let matchingSub: models.Subscription | null = null;
+  let matchingSub: Subscription | null = null;
   let noMatchingSub = false;
 
-  $: $publishStore.topic,
+  $: ($publishStore.topic,
     (() => {
       if ($publishStore.topic === "") {
         if ($publishStore.hasAttemptedPublish) {
@@ -59,7 +57,7 @@
       }
       publishStore.setPartial({ topicError: "" });
       debouncedGetTopicMatchesSubscription($publishStore.topic);
-    })();
+    })());
 
   const debouncedGetTopicMatchesSubscription = _.debounce(
     async (topic: string) => {
@@ -81,7 +79,7 @@
   );
 
   let getMatchingProtoDescriptor = (
-    sub: models.Subscription | null,
+    sub: Subscription | null,
     topic: string
   ) => {
     if (!sub) {
@@ -96,14 +94,14 @@
     return null;
   };
 
-  $: connection.connectionState,
+  $: (connection.connectionState,
     (() => {
       if (connection.connectionState !== "connected") {
         // Clear this on disconnect so it doesn't cache subs/protos
         // on reconnect if the user has modified the connection
         matchingSub = null;
       }
-    })();
+    })());
 
   $: publishMqtt = async () => {
     try {
@@ -118,7 +116,7 @@
         retain: $publishStore.retain,
         encoding: $publishStore.codec,
         format: $publishStore.format,
-        properties: $publishStore.properties,
+        properties: { ...$publishStore.properties, userProperties: undefined },
         userProperties,
       });
     } catch (e) {

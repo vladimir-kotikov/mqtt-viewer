@@ -10,10 +10,12 @@ import (
 	topicmatching "mqtt-viewer/backend/topic-matching"
 	"mqtt-viewer/backend/update"
 	"mqtt-viewer/events"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type App struct {
-	ctx            context.Context
+	wailsApp       *application.App
 	Mode           AppMode
 	Paths          paths.Paths
 	Db             *db.DB
@@ -39,4 +41,9 @@ func NewApp(appMode AppMode, version string) *App {
 		Mode:    appMode,
 		Version: version,
 	}
+}
+
+// SetWailsApp stores the Wails application reference. Must be called before app.Run().
+func (a *App) SetWailsApp(wailsApp *application.App) {
+	a.wailsApp = wailsApp
 }

@@ -1,5 +1,8 @@
+import {
+  LoadOpenTabs,
+  UpdateOpenConnectionTabs,
+} from "bindings/backend/app/app";
 import { get, writable } from "svelte/store";
-import { LoadOpenTabs, UpdateOpenConnectionTabs } from "wailsjs/go/app/App";
 
 export const MAX_OPEN_TABS = 10;
 

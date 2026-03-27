@@ -1,18 +1,15 @@
+import type { DeepOmit } from "@/util/types";
 import {
   AddSubscription,
   DeleteSubscription,
   GetAllSubscriptionsByConnectionId,
   UpdateSubscription,
-} from "wailsjs/go/app/App";
-import { get, writable } from "svelte/store";
-import type { models } from "wailsjs/go/models";
-import type { DeepOmit } from "@/util/types";
+} from "bindings/backend/app/app";
+import type { Subscription as WailsSubscription } from "bindings/backend/models/models";
 import { debounce } from "lodash";
+import { get, writable } from "svelte/store";
 
-type SubscriptionWithOptionalQos = DeepOmit<
-  models.Subscription,
-  "convertValues"
->;
+type SubscriptionWithOptionalQos = DeepOmit<WailsSubscription, "createFrom">;
 export type Subscription = SubscriptionWithOptionalQos & { qos: number };
 interface SubscriptionStore {
   subscriptionsByConnectionId: {
@@ -100,7 +97,7 @@ const updateSubscription = async (
   subscription: Subscription
 ) => {
   try {
-    debouncedUpdateSubscription(connId, subscription as models.Subscription);
+    debouncedUpdateSubscription(connId, subscription as WailsSubscription);
     let newSubs = [] as Subscription[];
     const existingSubs = get({ subscribe }).subscriptionsByConnectionId[connId];
     if (!existingSubs) {

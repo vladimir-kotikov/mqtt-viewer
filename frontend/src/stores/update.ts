@@ -1,12 +1,12 @@
+import { Browser } from "@wailsio/runtime";
 import { writable } from "svelte/store";
-import { update as wailsupdate } from "../../wailsjs/go/models";
-import { CheckForUpdates } from "../../wailsjs/go/app/App";
+import { CheckForUpdates } from "../../bindings/mqtt-viewer/backend/app/app";
+import type { UpdateResponse } from "../../bindings/mqtt-viewer/backend/update/models";
 import notificationStore, { type Notification } from "./notifications";
-import { BrowserOpenURL } from "../../wailsjs/runtime/runtime";
 
 interface UpdatesStore {
   isUpdateDialogOpen: boolean;
-  availableUpdate: null | wailsupdate.UpdateResponse;
+  availableUpdate: null | UpdateResponse;
 }
 
 const { subscribe, set, update } = writable<UpdatesStore>(
@@ -19,9 +19,12 @@ const { subscribe, set, update } = writable<UpdatesStore>(
       getAvailableUpdate();
     }, 2 * 1000);
     // Check every 10 minutes
-    setInterval(async () => {
-      getAvailableUpdate();
-    }, 10 * 60 * 1000);
+    setInterval(
+      async () => {
+        getAvailableUpdate();
+      },
+      10 * 60 * 1000
+    );
   }
 );
 
@@ -45,7 +48,7 @@ const getAvailableUpdate = async () => {
           };
           if (availableUpdate.notification_url) {
             notification.onClick = () => {
-              BrowserOpenURL(availableUpdate.notification_url);
+              Browser.OpenURL(availableUpdate.notification_url);
             };
           }
           if (availableUpdate.update_url) {

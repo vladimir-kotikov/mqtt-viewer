@@ -1,15 +1,15 @@
 <script lang="ts">
-  import type { mqtt } from "wailsjs/go/models";
+  import type { MessageProperties } from "bindings/backend/mqtt/models";
   import HeaderRow from "./shared/HeaderRow.svelte";
   import { getSortedObjectDiffs } from "./shared/diff-helpers";
 
   export let isComparing: boolean;
-  export let headers: mqtt.MessageProperties;
-  export let headersToCompare = undefined as mqtt.MessageProperties | undefined;
+  export let headers: MessageProperties;
+  export let headersToCompare = undefined as MessageProperties | undefined;
 
   console.log("headers", headers);
   const headersList: {
-    key: keyof mqtt.MessageProperties;
+    key: keyof MessageProperties;
     humanReadable: string;
   }[] = [
     {

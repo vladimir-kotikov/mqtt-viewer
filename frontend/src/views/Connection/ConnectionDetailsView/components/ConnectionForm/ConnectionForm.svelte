@@ -1,29 +1,28 @@
 <script lang="ts">
-  import { createForm } from "felte";
+  import Button from "@/components/Button/Button.svelte";
+  import IconButton from "@/components/Button/IconButton.svelte";
+  import ConnectionIdenticon from "@/components/ConnectionIdenticon/ConnectionIdenticon.svelte";
+  import DropdownCloseOnClick from "@/components/DropdownMenu/DropdownCloseOnClick.svelte";
+  import DropdownMenu from "@/components/DropdownMenu/DropdownMenu.svelte";
+  import Icon from "@/components/Icon/Icon.svelte";
   import BaseInput from "@/components/InputFields/BaseInput.svelte";
+  import FilePathPicker from "@/components/InputFields/FilePathPicker.svelte";
+  import Select from "@/components/InputFields/Select.svelte";
+  import Switch from "@/components/InputFields/Switch.svelte";
+  import { ERROR_MESSAGE_CLASS_NO_X_POSITION } from "@/components/InputFields/classes.js";
+  import Tooltip from "@/components/Tooltip/Tooltip.svelte";
+  import connections, { type Connection } from "@/stores/connections";
+  import { getConnectionIsValidContext } from "@/views/Connection/contexts/connection-is-valid.js";
   import { validator } from "@felte/validator-zod";
+  import { createForm } from "felte";
+  import { isEmpty } from "lodash";
+  import { writable } from "svelte/store";
+  import { twMerge } from "tailwind-merge";
+  import ConfirmDeleteConnectionDialog from "../ConfirmDeleteConnectionDialog/ConfirmDeleteConnectionDialog.svelte";
   import {
     ConnectionFormValidationSchema,
     type ConnectionFormValues,
   } from "./validation.js";
-  import connections, { type Connection } from "@/stores/connections";
-  import Select from "@/components/InputFields/Select.svelte";
-  import Switch from "@/components/InputFields/Switch.svelte";
-  import { ERROR_MESSAGE_CLASS_NO_X_POSITION } from "@/components/InputFields/classes.js";
-  import { isEmpty } from "lodash";
-  import { twMerge } from "tailwind-merge";
-  import ConnectionIdenticon from "@/components/ConnectionIdenticon/ConnectionIdenticon.svelte";
-  import FilePathPicker from "@/components/InputFields/FilePathPicker.svelte";
-  import { getConnectionIsValidContext } from "@/views/Connection/contexts/connection-is-valid.js";
-  import DropdownMenu from "@/components/DropdownMenu/DropdownMenu.svelte";
-  import Button from "@/components/Button/Button.svelte";
-  import DropdownCloseOnClick from "@/components/DropdownMenu/DropdownCloseOnClick.svelte";
-  import ConfirmDeleteConnectionDialog from "../ConfirmDeleteConnectionDialog/ConfirmDeleteConnectionDialog.svelte";
-  import { writable } from "svelte/store";
-  import Icon from "@/components/Icon/Icon.svelte";
-  import IconButton from "@/components/Button/IconButton.svelte";
-  import Tooltip from "@/components/Tooltip/Tooltip.svelte";
-  import SparkplugLogo from "@/components/SparkplugLogo/SparkplugLogo.svelte";
 
   export let connection: Connection;
   $: connectionId = connection.connectionDetails.id;
@@ -85,19 +84,19 @@
     }
   };
 
-  $: $isValid,
+  $: ($isValid,
     (async () => {
       await validate();
       connectionIsValid.set($isValid);
-    })();
+    })());
 
-  $: $data,
+  $: ($data,
     (() => {
       const values = $data;
       if ($isValid && !isEmpty(values) && !isAllFieldsDisabled) {
         submit(values);
       }
-    })();
+    })());
 
   $: isSslTls = $data.protocol === "mqtts" || $data.protocol === "wss";
 
@@ -259,7 +258,7 @@
     }}
     name="hasCustomClientId"
     label="Use custom Client ID"
-    defaultChecked={hasCustomClientId}
+    defaultChecked={hasCustomClientId ?? undefined}
   />
   {#if $data.hasCustomClientId}
     <BaseInput
@@ -280,7 +279,7 @@
         onChange={(checked) => setFields(`isCertsEnabled`, checked, true)}
         name="isCertsEnabled"
         label="Use custom certificates"
-        defaultChecked={isCertsEnabled}
+        defaultChecked={isCertsEnabled ?? undefined}
       />
     </div>
     <div style:display={$data.isCertsEnabled && isSslTls ? undefined : "none"}>
@@ -288,7 +287,7 @@
         onChange={(checked) => setFields(`skipCertVerification`, checked, true)}
         name="skipCertVerification"
         label="Skip certificate validation (insecure)"
-        defaultChecked={skipCertVerification}
+        defaultChecked={skipCertVerification ?? undefined}
       />
     </div>
   </div>
@@ -338,7 +337,7 @@
     onChange={(checked) => setFields(`isProtoEnabled`, checked, true)}
     name="isProtoEnabled"
     label="Automatically encode/decode Sparkplug messages"
-    defaultChecked={isProtoEnabled}
+    defaultChecked={isProtoEnabled ?? undefined}
   />
 </form>
 <ConfirmDeleteConnectionDialog

@@ -1,7 +1,7 @@
-import { get, writable } from "svelte/store";
-import { Environment, WindowIsFullscreen } from "wailsjs/runtime/runtime";
+import { System, Window } from "@wailsio/runtime";
+import { GetEnvInfo } from "bindings/backend/app/app";
 import _ from "lodash";
-import { GetEnvInfo } from "wailsjs/go/app/App";
+import { writable } from "svelte/store";
 
 const IS_BETA = true;
 
@@ -34,7 +34,7 @@ const { subscribe, set, update } = writable<EnvStore>({
 });
 
 const debouncedCheckFullscreen = _.debounce(async () => {
-  const isFullscreen = await WindowIsFullscreen();
+  const isFullscreen = await Window.IsFullscreen();
   update((store) => {
     return {
       ...store,
@@ -46,16 +46,20 @@ const debouncedCheckFullscreen = _.debounce(async () => {
 const init = async () => {
   try {
     window.addEventListener("resize", debouncedCheckFullscreen, true);
-    const env = await Environment();
-    const isFullscreen = await WindowIsFullscreen();
+    const sysEnv = await System.Environment();
+    const isFullscreen = await Window.IsFullscreen();
     const configuredEnv = await GetEnvInfo();
     set({
-      env,
+      env: {
+        buildType: sysEnv.Debug ? "debug" : "production",
+        platform: sysEnv.OS,
+        arch: sysEnv.Arch,
+      },
       isFullscreen,
       version: configuredEnv.version,
-      isMac: env.platform === "darwin",
-      isWindows: env.platform === "windows",
-      isLinux: env.platform === "linux",
+      isMac: System.IsMac(),
+      isWindows: System.IsWindows(),
+      isLinux: System.IsLinux(),
       isBeta: IS_BETA,
     });
   } catch (e) {

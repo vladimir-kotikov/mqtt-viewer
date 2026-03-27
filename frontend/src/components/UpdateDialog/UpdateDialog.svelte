@@ -1,20 +1,19 @@
 <script lang="ts">
+  import updateStore from "@/stores/update";
+  import { StartUpdate } from "bindings/backend/app/app";
+  import { Square } from "svelte-loading-spinners";
   import { writable } from "svelte/store";
+  import Button from "../Button/Button.svelte";
   import Dialog from "../Dialog/Dialog.svelte";
   import DialogActionBar from "../Dialog/DialogActionBar.svelte";
-  import updateStore from "@/stores/update";
-  import Button from "../Button/Button.svelte";
   import { addToast } from "../Toast/Toast.svelte";
-  import { Square } from "svelte-loading-spinners";
-  import { StartUpdate } from "wailsjs/go/app/App";
-  import env from "@/stores/env";
 
   let isOpen = writable(false);
   let isUpdating = false;
-  $: $updateStore.isUpdateDialogOpen,
+  $: ($updateStore.isUpdateDialogOpen,
     (() => {
       isOpen.set($updateStore.isUpdateDialogOpen);
-    })();
+    })());
   const onClose = () => {
     updateStore.closeUpdateDialog();
   };
