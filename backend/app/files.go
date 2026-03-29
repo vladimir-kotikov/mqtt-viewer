@@ -1,3 +1,5 @@
+//go:build !server
+
 package app
 
 func (a *App) ChooseCertFile(title string) (string, error) {

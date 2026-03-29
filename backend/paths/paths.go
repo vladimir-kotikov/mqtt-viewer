@@ -13,6 +13,14 @@ type Paths struct {
 }
 
 func GetPaths() Paths {
+	// Allow override via environment variable (useful for Docker/container deployments)
+	if envPath := os.Getenv("MQTT_VIEWER_DATA_DIR"); envPath != "" {
+		if _, err := os.ReadDir(envPath); os.IsNotExist(err) {
+			os.MkdirAll(envPath, os.ModePerm)
+		}
+		return Paths{ResourcePath: envPath}
+	}
+
 	homeDir, err := os.UserHomeDir()
 	resourcePath := ""
 	switch runtime.GOOS {
@@ -41,6 +49,14 @@ var configDir = path.Dir(filename)
 var devResourcesDir = path.Join(configDir, "../../_dev_resources")
 
 func GetDevPaths() Paths {
+	// Honour the same env var override used by GetPaths()
+	if envPath := os.Getenv("MQTT_VIEWER_DATA_DIR"); envPath != "" {
+		if _, err := os.ReadDir(envPath); os.IsNotExist(err) {
+			os.MkdirAll(envPath, os.ModePerm)
+		}
+		return Paths{ResourcePath: envPath}
+	}
+
 	if _, err := os.Stat(devResourcesDir); os.IsNotExist(err) {
 		os.MkdirAll(devResourcesDir, os.ModePerm)
 	}

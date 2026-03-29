@@ -9,7 +9,8 @@ tasks:
     deps:
     - task: common:go:mod:tidy
     cmds:
-    - go build -gcflags all="-N -l" -o "{{.BIN_DIR}}/{{.APP_NAME}}" .
+    - "{{.ROOT_DIR}}/scripts/apply-patches.sh"
+    - go build -mod=vendor -gcflags all="-N -l" -o "{{.BIN_DIR}}/{{.APP_NAME}}" .
     env:
       GOOS: darwin
       CGO_ENABLED: "1"

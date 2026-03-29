@@ -1,0 +1,122 @@
+--- a/vendor/github.com/wailsapp/wails/v3/pkg/application/application_server.go	2026-03-26 20:03:25
++++ b/vendor/github.com/wailsapp/wails/v3/pkg/application/application_server.go	2026-03-29 14:22:28
+@@ -11,6 +11,7 @@
+ 	"os"
+ 	"os/signal"
+ 	"strconv"
++	"strings"
+ 	"syscall"
+ 	"time"
+ 	"unsafe"
+@@ -163,13 +164,13 @@
+ 	return nil
+ }
+ 
+-// customJS is the JavaScript that sets up WebSocket event connection for server mode.
+-// Events FROM frontend TO backend use the existing HTTP transport.
+-// This WebSocket is only for receiving broadcast events FROM backend TO all frontends.
+-const customJS = `(function() {
++// customJSTemplate is the JavaScript that sets up WebSocket event connection for
++// server mode. {{WAILS_EVENTS_PATH}} is replaced at runtime with the actual path
++// (e.g. "/wails/events" or "/my-app/wails/events" when BASE_PATH is set).
++const customJSTemplate = `(function() {
+ 	var protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+ 	var clientId = window._wails && window._wails.clientId ? window._wails.clientId : '';
+-	var wsUrl = protocol + '//' + location.host + '/wails/events' + (clientId ? '?clientId=' + encodeURIComponent(clientId) : '');
++	var wsUrl = protocol + '//' + location.host + '{{WAILS_EVENTS_PATH}}' + (clientId ? '?clientId=' + encodeURIComponent(clientId) : '');
+ 	var ws;
+ 
+ 	function connect() {
+@@ -199,29 +200,75 @@
+ 	connect();
+ })();`
+ 
++// normalizeBasePath cleans a base path value from an env var.
++// Returns a string that starts with "/" and has no trailing slash,
++// or "" if the input is empty / "/".
++func normalizeBasePath(s string) string {
++	s = strings.TrimSpace(s)
++	if s == "" || s == "/" {
++		return ""
++	}
++	if !strings.HasPrefix(s, "/") {
++		s = "/" + s
++	}
++	return strings.TrimRight(s, "/")
++}
++
+ // createHandler creates the HTTP handler for server mode.
++// When the BASE_PATH environment variable is set (e.g. "/mqtt-viewer") all
++// Wails routes are registered under that prefix and incoming requests are
++// stripped of it before being forwarded to the asset server. The /health
++// endpoint is always available at the root as well so container probes work
++// regardless of the configured prefix.
+ func (h *serverApp) createHandler() http.Handler {
+-	mux := http.NewServeMux()
++	basePath := normalizeBasePath(os.Getenv("BASE_PATH"))
+ 
+-	// Health check endpoint
+-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
++	// eventsPath is the full path to the WebSocket endpoint, used inside
++	// the dynamically generated custom.js.
++	eventsPath := basePath + "/wails/events"
++	customJS := strings.ReplaceAll(customJSTemplate, "{{WAILS_EVENTS_PATH}}", eventsPath)
++
++	healthHandler := func(w http.ResponseWriter, r *http.Request) {
+ 		w.Header().Set("Content-Type", "application/json")
+ 		w.WriteHeader(http.StatusOK)
+ 		w.Write([]byte(`{"status":"ok"}`))
+-	})
+-
+-	// Serve custom.js for server mode (WebSocket event connection)
+-	mux.HandleFunc("/wails/custom.js", func(w http.ResponseWriter, r *http.Request) {
++	}
++	customJSHandler := func(w http.ResponseWriter, r *http.Request) {
+ 		w.Header().Set("Content-Type", "application/javascript")
+ 		w.WriteHeader(http.StatusOK)
+ 		w.Write([]byte(customJS))
+-	})
++	}
+ 
+-	// WebSocket endpoint for events
+-	mux.Handle("/wails/events", h.broadcaster)
++	mux := http.NewServeMux()
+ 
+-	// Serve all other requests through the asset server
+-	mux.Handle("/", h.app.assets)
++	// /health is always available at root for Docker / Kubernetes probes.
++	mux.HandleFunc("/health", healthHandler)
++
++	if basePath == "" {
++		// No sub-path configured – serve everything at root.
++		mux.HandleFunc("/wails/custom.js", customJSHandler)
++		mux.Handle("/wails/events", h.broadcaster)
++		mux.Handle("/", h.app.assets)
++	} else {
++		h.app.info("Server sub-path configured", "basePath", basePath)
++
++		// Also expose health under the base path for convenience.
++		mux.HandleFunc(basePath+"/health", healthHandler)
++
++		// Wails-specific routes under base path.
++		mux.HandleFunc(basePath+"/wails/custom.js", customJSHandler)
++		mux.Handle(basePath+"/wails/events", h.broadcaster)
++
++		// All other requests under the base path are forwarded to the asset
++		// server after stripping the prefix (so it sees paths rooted at "/").
++		stripped := http.StripPrefix(basePath, h.app.assets)
++		mux.Handle(basePath+"/", stripped)
++
++		// Redirect bare base path to the canonical base path with trailing slash.
++		mux.HandleFunc(basePath, func(w http.ResponseWriter, r *http.Request) {
++			http.Redirect(w, r, basePath+"/", http.StatusMovedPermanently)
++		})
++	}
+ 
+ 	return mux
+ }
+@@ -552,3 +599,4 @@
+ func (w *serverWebviewWindow) setMenu(menu *Menu)                         {}
+ func (w *serverWebviewWindow) snapAssist()                                {}
+ func (w *serverWebviewWindow) setContentProtection(enabled bool)          {}
++func (w *serverWebviewWindow) attachModal(_ *WebviewWindow)               {}

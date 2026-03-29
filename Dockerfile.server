@@ -1,0 +1,80 @@
+# ──────────────────────────────────────────────
+# Stage 1: Build frontend
+# ──────────────────────────────────────────────
+FROM node:22-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+# Install pnpm
+RUN npm install -g pnpm
+
+# Install dependencies (cached layer)
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+
+# Sub-path base URL for Vite build (e.g. "/mqtt-viewer/" or "/")
+# Must match the BASE_PATH runtime env var (with trailing slash).
+ARG VITE_BASE=/
+
+# Copy source (including pre-generated bindings)
+COPY frontend/ ./
+
+# Build with base URL
+RUN VITE_BASE=${VITE_BASE} pnpm build
+
+# ──────────────────────────────────────────────
+# Stage 2: Build Go server binary
+# ──────────────────────────────────────────────
+FROM golang:1.25-alpine AS go-builder
+
+# patch(1) is needed for the Wails vendor patches
+RUN apk add --no-cache patch
+
+WORKDIR /app
+
+# Download modules, then vendor + apply patches in one cached layer.
+# scripts/apply-patches.sh runs `go mod vendor` then applies patches/*.patch
+COPY go.mod go.sum ./
+COPY patches/ ./patches/
+COPY scripts/apply-patches.sh ./scripts/apply-patches.sh
+RUN chmod +x scripts/apply-patches.sh && ./scripts/apply-patches.sh
+
+# Copy remaining source (after vendor is built to maximise cache reuse)
+COPY . .
+
+# Overwrite frontend/dist with the freshly built frontend
+COPY --from=frontend-builder /app/frontend/dist ./frontend/dist
+
+# Cross-compile for linux/amd64, no CGO (glebarez/sqlite is pure-Go)
+RUN GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
+    go build -mod=vendor -tags server \
+    -ldflags="-s -w -X mqtt-viewer/backend/env.Version=0.0.0-docker" \
+    -o /server .
+
+# ──────────────────────────────────────────────
+# Stage 3: Minimal runtime image
+# ──────────────────────────────────────────────
+FROM alpine:3.20
+
+RUN apk add --no-cache ca-certificates
+
+WORKDIR /app
+
+COPY --from=go-builder /server ./server
+
+# Data directory (mount a volume here for persistence)
+ENV MQTT_VIEWER_DATA_DIR=/data
+VOLUME ["/data"]
+
+# Bind to all interfaces so the container is reachable from outside
+ENV WAILS_SERVER_HOST=0.0.0.0
+ENV WAILS_SERVER_PORT=8080
+
+# Optional sub-path when running behind a reverse proxy.
+# Must match the VITE_BASE build arg (without trailing slash).
+# Examples: BASE_PATH=/mqtt-viewer  or leave empty for root.
+ENV BASE_PATH=
+
+EXPOSE 8080
+
+ENTRYPOINT ["./server"]

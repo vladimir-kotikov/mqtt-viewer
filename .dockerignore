@@ -1,0 +1,27 @@
+# Build outputs
+build/bin/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Dev & test artifacts
+_dev_resources/
+backend/app/_test/
+
+# Local secrets / env
+.env
+secrets.json
+
+# macOS
+.DS_Store
+
+# Task runner cache
+.task/
+
+# Go dev database
+*.db
+
+# Vendored deps are re-generated inside the Docker build via apply-patches.sh
+vendor/
+_wails-patched/

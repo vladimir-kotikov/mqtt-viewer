@@ -1,10 +1,31 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
 import { fileURLToPath, URL } from "node:url";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+
+// Patch @wailsio/runtime hardcoded absolute /wails/* paths so they respect
+// the configured base URL. This makes the app work when served under a sub-path
+// (e.g. https://example.com/mqtt-viewer/).
+const wailsBasePathPlugin = (): Plugin => ({
+  name: "wails-base-path",
+  transform(code, id) {
+    if (!id.includes("@wailsio/runtime")) return;
+    const base = (process.env.VITE_BASE ?? "/").replace(/\/?$/, "/");
+    return code
+      .replace(
+        'window.location.origin + "/wails/runtime"',
+        `window.location.origin + ${JSON.stringify(base + "wails/runtime")}`
+      )
+      .replace(
+        "loadOptionalScript('/wails/custom.js')",
+        `loadOptionalScript(${JSON.stringify(base + "wails/custom.js")})`
+      );
+  },
+});
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [svelte()],
+  base: process.env.VITE_BASE ?? "/",
+  plugins: [svelte(), wailsBasePathPlugin()],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

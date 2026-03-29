@@ -1,0 +1,33 @@
+services:
+  mqtt-viewer:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+      args:
+        # Must end with a slash (e.g. "/mqtt-viewer/") and match BASE_PATH below.
+        # Leave as "/" to serve at the root (default).
+        VITE_BASE: ${VITE_BASE:-/}
+    image: mqtt-viewer:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - mqtt-viewer-data:/data
+    environment:
+      - WAILS_SERVER_HOST=0.0.0.0
+      - WAILS_SERVER_PORT=8080
+      - MQTT_VIEWER_DATA_DIR=/data
+      # Set to the sub-path prefix (without trailing slash) when running behind
+      # a reverse proxy that does NOT strip the prefix.
+      # Example: BASE_PATH=/mqtt-viewer
+      # Must match the VITE_BASE build arg (VITE_BASE=/mqtt-viewer/).
+      - BASE_PATH=${BASE_PATH:-}
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  mqtt-viewer-data:

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 	"mqtt-viewer/backend/machine"
+	"os"
 	"strings"
 )
 
@@ -33,8 +34,18 @@ func init() {
 	}
 	mid, err := machine.GetMachineId(MachineIdProtectString)
 	if err != nil {
-		slog.Error(fmt.Sprintf("error getting machine id: %v", err))
-		panic(fmt.Sprintf("error getting machine id: %v", err))
+		// Fallback for environments without /etc/machine-id (e.g. Alpine containers).
+		// Allow explicit override via env var; otherwise derive from hostname.
+		if envMid := os.Getenv("MQTT_VIEWER_MACHINE_ID"); envMid != "" {
+			MachineId = envMid
+		} else {
+			hostname, _ := os.Hostname()
+			if hostname == "" {
+				hostname = "unknown-machine"
+			}
+			MachineId = hostname
+			slog.Warn(fmt.Sprintf("machine ID unavailable (%v), using hostname as fallback: %s", err, hostname))
+		}
 	} else {
 		MachineId = mid
 	}

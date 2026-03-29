@@ -1,0 +1,10 @@
+--- a/vendor/github.com/wailsapp/wails/v3/pkg/application/browser_window.go	2026-03-26 20:03:25
++++ b/vendor/github.com/wailsapp/wails/v3/pkg/application/browser_window.go	2026-03-29 14:21:22
+@@ -134,6 +134,7 @@
+ func (b *BrowserWindow) SetEnabled(enabled bool)                      {}
+ func (b *BrowserWindow) Flash(enabled bool)                           {}
+ func (b *BrowserWindow) Print() error                                 { return nil }
++func (b *BrowserWindow) AttachModal(_ Window)                         {}
+ func (b *BrowserWindow) RegisterHook(eventType events.WindowEventType, callback func(event *WindowEvent)) func() {
+ 	return func() {}
+ }

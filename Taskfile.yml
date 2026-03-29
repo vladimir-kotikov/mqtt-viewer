@@ -18,3 +18,35 @@ tasks:
     summary: Runs the application
     cmds:
     - task: "{{OS}}:run"
+
+  vendor:
+    summary: Runs go mod vendor and applies patches/*.patch
+    cmds:
+    - ./scripts/apply-patches.sh
+
+  build:server:
+    summary: Cross-compiles the server binary for Linux (CGO-free, -tags server)
+    cmds:
+    - task: vendor
+    - task: common:build:frontend
+    - GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -mod=vendor -tags server -ldflags="-s -w" -o "{{.BIN_DIR}}/mqtt-viewer-server-linux" .
+
+  run:server:
+    summary: Runs the server binary (must build:server first)
+    cmds:
+    - '"{{.BIN_DIR}}/mqtt-viewer-server-linux"'
+
+  build:docker:
+    summary: Builds the Docker image
+    vars:
+      TAG: '{{default "mqtt-viewer:latest" .TAG}}'
+    cmds:
+    - docker build -f Dockerfile.server -t {{.TAG}} .
+
+  run:docker:
+    summary: Runs the Docker container
+    vars:
+      TAG: '{{default "mqtt-viewer:latest" .TAG}}'
+      PORT: '{{default "8080" .PORT}}'
+    cmds:
+    - docker run --rm -p {{.PORT}}:8080 -v mqtt-viewer-data:/data {{.TAG}}
