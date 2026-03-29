@@ -1,5 +1,9 @@
 import { Window } from "@wailsio/runtime";
-import { GetPanelSizes, UpdatePanelSize } from "bindings/backend/app/app";
+import {
+  GetEnvInfo,
+  GetPanelSizes,
+  UpdatePanelSize,
+} from "bindings/backend/app/app";
 import { writable } from "svelte/store";
 
 type SizePx = number;
@@ -23,7 +27,7 @@ const { subscribe, set, update } = writable<PanelSizes>({
 
 const init = async () => {
   try {
-    const windowSize = await Window.Size();
+    const { isServer } = await GetEnvInfo();
     const panelSizes = await GetPanelSizes();
     const resizablePanelSizes: {
       [id: string]: {
@@ -37,11 +41,19 @@ const init = async () => {
         isOpen: panelSize.isOpen,
       };
     }
-    set({
-      rootWindowHeight: windowSize.height,
-      rootWindowWidth: windowSize.width,
-      resizablePanelSizes,
-    });
+    if (isServer) {
+      // In server mode Window.Size() is unavailable. Only update resizablePanelSizes;
+      // rootWindowWidth/Height are kept as set by App.svelte's bind:clientWidth so
+      // ResizableContainer maxSize stays correct.
+      update((store) => ({ ...store, resizablePanelSizes }));
+    } else {
+      const windowSize = await Window.Size();
+      set({
+        rootWindowHeight: windowSize.height,
+        rootWindowWidth: windowSize.width,
+        resizablePanelSizes,
+      });
+    }
   } catch (e) {
     console.error(e);
   }

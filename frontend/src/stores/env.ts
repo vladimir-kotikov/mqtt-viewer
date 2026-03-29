@@ -17,6 +17,7 @@ interface EnvStore {
   isLinux: boolean;
   isFullscreen: boolean;
   isBeta: boolean;
+  isServer: boolean;
 }
 
 const { subscribe, set, update } = writable<EnvStore>({
@@ -31,6 +32,7 @@ const { subscribe, set, update } = writable<EnvStore>({
   isLinux: false,
   isFullscreen: false,
   isBeta: IS_BETA,
+  isServer: false,
 });
 
 const debouncedCheckFullscreen = _.debounce(async () => {
@@ -45,10 +47,14 @@ const debouncedCheckFullscreen = _.debounce(async () => {
 
 const init = async () => {
   try {
-    window.addEventListener("resize", debouncedCheckFullscreen, true);
-    const sysEnv = await System.Environment();
-    const isFullscreen = await Window.IsFullscreen();
     const configuredEnv = await GetEnvInfo();
+    const isServer = configuredEnv.isServer;
+    // Window.* API requires a native WebviewWindow — not available in server mode.
+    const isFullscreen = isServer ? false : await Window.IsFullscreen();
+    const sysEnv = await System.Environment();
+    if (!isServer) {
+      window.addEventListener("resize", debouncedCheckFullscreen, true);
+    }
     set({
       env: {
         buildType: sysEnv.Debug ? "debug" : "production",
@@ -61,6 +67,7 @@ const init = async () => {
       isWindows: System.IsWindows(),
       isLinux: System.IsLinux(),
       isBeta: IS_BETA,
+      isServer,
     });
   } catch (e) {
     console.error(e);

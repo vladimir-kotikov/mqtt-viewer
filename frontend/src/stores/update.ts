@@ -1,6 +1,9 @@
 import { Browser } from "@wailsio/runtime";
 import { writable } from "svelte/store";
-import { CheckForUpdates } from "../../bindings/mqtt-viewer/backend/app/app";
+import {
+  CheckForUpdates,
+  GetEnvInfo,
+} from "../../bindings/mqtt-viewer/backend/app/app";
 import type { UpdateResponse } from "../../bindings/mqtt-viewer/backend/update/models";
 import notificationStore, { type Notification } from "./notifications";
 
@@ -30,6 +33,9 @@ const { subscribe, set, update } = writable<UpdatesStore>(
 
 const getAvailableUpdate = async () => {
   try {
+    // Update checks make no sense in server/Docker mode (no auto-update mechanism).
+    const { isServer } = await GetEnvInfo();
+    if (isServer) return;
     const availableUpdate = await CheckForUpdates();
     if (availableUpdate) {
       update((store) => {

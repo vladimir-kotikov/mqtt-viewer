@@ -13,6 +13,14 @@ services:
     ports:
       - "8080:8080"
     volumes:
+      # Named volume — Docker pre-populates it from the image (chmod 777),
+      # so any runtime user can write here without extra setup.
+      #
+      # If you prefer a bind mount (e.g. ./data/mqtt-viewer:/app/data),
+      # make sure the host directory exists and is writable by the container
+      # user BEFORE starting:
+      #   mkdir -p ./data/mqtt-viewer
+      #   chown <UID>:<GID> ./data/mqtt-viewer
       - mqtt-viewer-data:/app/data
     environment:
       - WAILS_SERVER_HOST=0.0.0.0

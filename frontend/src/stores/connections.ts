@@ -81,13 +81,17 @@ const init = async () => {
 
 const getConnectionFromAppConnection = (appConnection: AppConnection) => {
   const typedAppConn = appConnection as Required<AppConnection>;
+  // isConnected reflects the live backend state at page load time — important
+  // in server mode where a new browser may connect after MQTT is already up.
+  const alreadyConnected = !!typedAppConn.isConnected;
   const conn: Connection = {
     ...typedAppConn,
     connectionString: getConnectionString(
       typedAppConn.connectionDetails as Connection["connectionDetails"]
     ),
-    connectionState: "disconnected" as ConnectionState,
-    showDataPageWhileDisconnected: false,
+    connectionState: alreadyConnected ? "connected" : "disconnected",
+    showDataPageWhileDisconnected: alreadyConnected,
+    firstConnectedThisSessionAtMs: alreadyConnected ? Date.now() : undefined,
     connectionDetails: {
       ...(typedAppConn.connectionDetails as Connection["connectionDetails"]),
       lastConnectedAt: !!typedAppConn.connectionDetails.lastConnectedAt
