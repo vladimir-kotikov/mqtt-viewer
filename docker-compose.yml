@@ -8,14 +8,16 @@ services:
         # Leave as "/" to serve at the root (default).
         VITE_BASE: ${VITE_BASE:-/}
     image: mqtt-viewer:latest
+    # Uncomment and set USER_ID / USER_GRP in your .env to run as a specific user.
+    # user: "${USER_ID}:${USER_GRP}"
     ports:
       - "8080:8080"
     volumes:
-      - mqtt-viewer-data:/data
+      - mqtt-viewer-data:/app/data
     environment:
       - WAILS_SERVER_HOST=0.0.0.0
       - WAILS_SERVER_PORT=8080
-      - MQTT_VIEWER_DATA_DIR=/data
+      - MQTT_VIEWER_DATA_DIR=/app/data
       # Set to the sub-path prefix (without trailing slash) when running behind
       # a reverse proxy that does NOT strip the prefix.
       # Example: BASE_PATH=/mqtt-viewer

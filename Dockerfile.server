@@ -1,5 +1,13 @@
 # ──────────────────────────────────────────────
-# Stage 0: Generate Wails JS/TS bindings
+# Stage 0a: Install the wails3 CLI tool
+# Cached independently – only re-runs when the pinned version changes.
+# ──────────────────────────────────────────────
+FROM golang:1.25-alpine AS wails-tool
+RUN CGO_ENABLED=0 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.74
+
+# ──────────────────────────────────────────────
+# Stage 0b: Generate Wails JS/TS bindings
+# Only Go source is copied here so frontend edits don't bust this cache.
 # ──────────────────────────────────────────────
 FROM golang:1.25-alpine AS bindings-generator
 
@@ -8,10 +16,14 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . .
+# Copy only the Go sources needed for binding generation (no frontend/).
+COPY *.go ./
+COPY backend/ ./backend/
+COPY events/ ./events/
+COPY wails.json ./
 
-RUN CGO_ENABLED=0 go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.74 && \
-    wails3 generate bindings -clean=true
+COPY --from=wails-tool /go/bin/wails3 /usr/local/bin/wails3
+RUN wails3 generate bindings -clean=true
 
 # ──────────────────────────────────────────────
 # Stage 1: Build frontend
@@ -79,9 +91,12 @@ WORKDIR /app
 
 COPY --from=go-builder /server ./server
 
-# Data directory (mount a volume here for persistence)
-ENV MQTT_VIEWER_DATA_DIR=/data
-VOLUME ["/data"]
+# Create the data mount point with open permissions so the app can bootstrap
+# its own directory structure (db, logs, etc.) regardless of which UID/GID
+# the container runs as. Set the runtime user via `user:` in docker-compose.
+RUN mkdir -p /app/data && chmod 777 /app/data
+ENV MQTT_VIEWER_DATA_DIR=/app/data
+VOLUME ["/app/data"]
 
 # Bind to all interfaces so the container is reachable from outside
 ENV WAILS_SERVER_HOST=0.0.0.0
