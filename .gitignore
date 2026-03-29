@@ -3,7 +3,7 @@ node_modules
 frontend/dist
 *.db
 _dev_resources
-mqtt-viewer
+/mqtt-viewer
 secrets.json
 .env
 .DS_STORE

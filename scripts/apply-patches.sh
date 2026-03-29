@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # apply-patches.sh – vendor dependencies and apply local patches.
 #
 # Wails v3 alpha.74 has two bugs that require patching before the server build
@@ -19,29 +19,31 @@
 #   ./scripts/apply-patches.sh           # vendor + patch
 #   ./scripts/apply-patches.sh --check   # dry-run (check patches apply cleanly)
 #
-set -euo pipefail
+set -eu
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PATCHES_DIR="$REPO_ROOT/patches"
 CHECK=0
 
 for arg in "$@"; do
-  [[ "$arg" == "--check" ]] && CHECK=1
+  [ "$arg" = "--check" ] && CHECK=1
 done
 
 cd "$REPO_ROOT"
 
-if [[ $CHECK -eq 0 ]]; then
+if [ "$CHECK" -eq 0 ]; then
   echo "► go mod vendor"
   go mod vendor
 fi
 
-PATCH_ARGS=("-p1" "--no-backup-if-mismatch")
-[[ $CHECK -eq 1 ]] && PATCH_ARGS+=("--dry-run")
-
 for patch_file in "$PATCHES_DIR"/*.patch; do
-  echo "► patch ${PATCH_ARGS[*]} < $patch_file"
-  patch "${PATCH_ARGS[@]}" < "$patch_file"
+  if [ "$CHECK" -eq 1 ]; then
+    echo "► patch -p1 --no-backup-if-mismatch --dry-run < $patch_file"
+    patch -p1 --no-backup-if-mismatch --dry-run < "$patch_file"
+  else
+    echo "► patch -p1 --no-backup-if-mismatch < $patch_file"
+    patch -p1 --no-backup-if-mismatch < "$patch_file"
+  fi
 done
 
 echo "✓ All patches applied successfully."
